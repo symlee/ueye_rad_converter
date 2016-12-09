@@ -51,15 +51,7 @@ image_transport::Subscriber image_sub_;
 image_transport::Publisher image_pub_color;
 image_transport::Publisher image_pub_mono;
 
-int min_value_= 13200;//0;
-int max_value_ = 13800;//65355;
-bool auto_range_ = true;
 int color_map_ = 2;
-int num_bins = 1000;
-bool hist_equal = false;
-
-float minBound;
-float maxBound;
 
 string raw_topic;
 string mono_topic;
@@ -67,44 +59,10 @@ string color_topic;
 
 cv::MatND imHist;
 
-//color mappings
-enum
-{
-  COLORMAP_AUTUMN = 0,
-   COLORMAP_BONE = 1,
-   COLORMAP_JET = 2,
-   COLORMAP_WINTER = 3,
-   COLORMAP_RAINBOW = 4,
-   COLORMAP_OCEAN = 5,
-   COLORMAP_SUMMER = 6,
-   COLORMAP_SPRING = 7,
-   COLORMAP_COOL = 8,
-   COLORMAP_HSV = 9,
-   COLORMAP_PINK = 10,
-   COLORMAP_HOT = 11
-};
-
 void configCb(ueye_rad_converter::UeyeRadConfig &newconfig, uint32_t level)
 {
-  if (newconfig.auto_range)
-    {
-      //update reconfig box with current values of max and min
-      newconfig.min_value = min_value_;
-      newconfig.max_value = max_value_;
-    }
-  else
-    {
-      min_value_ = newconfig.min_value;
-      max_value_ = newconfig.max_value;
-    }
-  if (newconfig.auto_range != auto_range_)
-    auto_range_ = newconfig.auto_range;
   if (newconfig.color_map != color_map_)
     color_map_ = newconfig.color_map;
-  if (newconfig.hist_equal != color_map_)
-    hist_equal = newconfig.hist_equal;
-  if (newconfig.num_bins != num_bins)
-    num_bins = newconfig.num_bins;
 }
 
 void imageCb(const sensor_msgs::ImageConstPtr& msg) {
@@ -132,6 +90,7 @@ void imageCb(const sensor_msgs::ImageConstPtr& msg) {
   //color image
   cv_ptr_->encoding = "rgb8";
   cv::applyColorMap(cv_ptr_->image, cv_ptr_->image, color_map_);
+  cv::GaussianBlur(cv_ptr_->image, cv_ptr_->image, cv::Size(11,11), 0, 0);
 
   // convert openCV's BGR to RGB for proper visualization in RVIZ
   cv::cvtColor(cv_ptr_->image, cv_ptr_->image, cv::COLOR_BGR2RGB);
@@ -152,16 +111,10 @@ int main(int argc, char** argv)
   f = boost::bind(&configCb, _1, _2);
   server.setCallback(f);
 
-  ros::param::get("~max_val", max_value_);
-  ros::param::get("~min_val", min_value_);
-  ros::param::get("~auto_range", auto_range_);
   ros::param::get("~color_map", color_map_);
-
   ros::param::get("~raw_topic", raw_topic);
   ros::param::get("~mono_topic", mono_topic);
   ros::param::get("~color_topic", color_topic);
-  ros::param::get("~num_bins", num_bins);
-  ros::param::get("~hist_equal", hist_equal);
 
   image_transport::ImageTransport it_(nh);
 
