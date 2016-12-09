@@ -1,0 +1,34 @@
+<!--
+Configurable launch file to recolor mono16 output from the Ueye 3260CP-M-GL camera.
+
+You can uncomment the viewer at bottom if you want to view the image stream.
+-->
+
+<launch>
+
+  <!-- Namespace to publish in -->
+    <arg name="maxVal"          default="0xFFFF" />
+    <arg name="minVal"          default="0" />
+    <arg name="autoRange"      default="1" />
+    <arg name="colorMap"        default = "12"/>
+    <arg name="histEqual"       default="true" />
+    <arg name="rawTopic"          default="/ueye_rad/image_raw" />
+    <arg name="monoTopic"      default="/ueye_rad/image_mono" />
+    <arg name="colorTopic"        default = "/ueye_rad/image_color"/>
+    <arg name="numBins"        default = "2000"/>
+
+  <!-- The camera node -->
+  <node name="ueye_rad_converter" pkg="ueye_rad_converter" type="ueye_rad_converter" output="screen" respawn="true">
+    <param name="max_val" value="$(arg maxVal)"  />
+    <param name="min_val" value="$(arg minVal)" />
+    <param name="auto_range" value="$(arg autoRange)" />
+    <param name="color_map" value="$(arg colorMap)"/>
+    <param name="hist_equal" type="bool" value="$(arg histEqual)"/>
+    <param name="raw_topic" type="str" value="$(arg rawTopic)" />
+    <param name="mono_topic" type="str" value="$(arg monoTopic)" />
+    <param name="color_topic" type="str" value="$(arg colorTopic)"/>
+    <param name="num_bins" value="$(arg numBins)"/>
+  </node>
+
+
+</launch>
