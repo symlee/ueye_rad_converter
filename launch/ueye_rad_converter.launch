@@ -9,8 +9,8 @@ You can uncomment the viewer at bottom if you want to view the image stream.
   <!-- Namespace to publish in -->
     <arg name="maxVal"          default="0xFFFF" />
     <arg name="minVal"          default="0" />
-    <arg name="autoRange"      default="1" />
-    <arg name="colorMap"        default = "12"/>
+    <arg name="autoRange"      default="0" />
+    <arg name="colorMap"        default = "2"/>
     <arg name="histEqual"       default="true" />
     <arg name="rawTopic"          default="/ueye_rad/image_raw" />
     <arg name="monoTopic"      default="/ueye_rad/image_mono" />

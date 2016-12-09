@@ -1,36 +1,36 @@
 /*********************************************************************
-* Software License Agreement (BSD License)
-*
-*  Copyright (c) 2012, Ye Cheng
-*  All rights reserved.
-*
-*  Redistribution and use in source and binary forms, with or without
-*  modification, are permitted provided that the following conditions
-*  are met:
-*
-*   * Redistributions of source code must retain the above copyright
-*     notice, this list of conditions and the following disclaimer.
-*   * Redistributions in binary form must reproduce the above
-*     copyright notice, this list of conditions and the following
-*     disclaimer in the documentation and/or other materials provided
-*     with the distribution.
-*   * Neither the name of the Willow Garage nor the names of its
-*     contributors may be used to endorse or promote products derived
-*     from this software without specific prior written permission.
-*
-*  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-*  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-*  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
-*  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
-*  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-*  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
-*  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-*  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-*  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-*  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
-*  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-*  POSSIBILITY OF SUCH DAMAGE.
-*********************************************************************/
+ * Software License Agreement (BSD License)
+ *
+ *  Copyright (c) 2012, Ye Cheng
+ *  All rights reserved.
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions
+ *  are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above
+ *     copyright notice, this list of conditions and the following
+ *     disclaimer in the documentation and/or other materials provided
+ *     with the distribution.
+ *   * Neither the name of the Willow Garage nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+ *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+ *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+ *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+ *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+ *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
+ *********************************************************************/
 
 
 #include <ros/ros.h>
@@ -45,7 +45,7 @@
 
 
 namespace enc = sensor_msgs::image_encodings;
-
+using namespace std;
 
 image_transport::Subscriber image_sub_;
 image_transport::Publisher image_pub_color;
@@ -61,29 +61,28 @@ bool hist_equal = false;
 float minBound;
 float maxBound;
 
-std::string raw_topic;
-std::string mono_topic;
-std::string color_topic;
+string raw_topic;
+string mono_topic;
+string color_topic;
 
 cv::MatND imHist;
 
-
 //color mappings
-//enum
-//{
-//   COLORMAP_AUTUMN = 0,
-//    COLORMAP_BONE = 1,
-//    COLORMAP_JET = 2,
-//    COLORMAP_WINTER = 3,
-//    COLORMAP_RAINBOW = 4,
-//    COLORMAP_OCEAN = 5,
-//    COLORMAP_SUMMER = 6,
-//    COLORMAP_SPRING = 7,
-//    COLORMAP_COOL = 8,
-//    COLORMAP_HSV = 9,
-//    COLORMAP_PINK = 10,
-//    COLORMAP_HOT = 11
-//}
+enum
+{
+  COLORMAP_AUTUMN = 0,
+   COLORMAP_BONE = 1,
+   COLORMAP_JET = 2,
+   COLORMAP_WINTER = 3,
+   COLORMAP_RAINBOW = 4,
+   COLORMAP_OCEAN = 5,
+   COLORMAP_SUMMER = 6,
+   COLORMAP_SPRING = 7,
+   COLORMAP_COOL = 8,
+   COLORMAP_HSV = 9,
+   COLORMAP_PINK = 10,
+   COLORMAP_HOT = 11
+};
 
 void applyIronColorMap(cv::Mat& im_gray, cv::Mat& im_color)
 {
@@ -97,111 +96,134 @@ void applyIronColorMap(cv::Mat& im_gray, cv::Mat& im_color)
   cv::cvtColor(im_gray.clone(), im_gray, cv::COLOR_GRAY2BGR);
 
   cv::LUT(im_gray, lut, im_color);
-
 }
 
 void configCb(ueye_rad_converter::UeyeRadConfig &newconfig, uint32_t level)
 {
   if (newconfig.auto_range)
-  {
-    //update reconfig box with current values of max and min
-    newconfig.min_value = min_value_;
-    newconfig.max_value = max_value_;
-  }
+    {
+      //update reconfig box with current values of max and min
+      newconfig.min_value = min_value_;
+      newconfig.max_value = max_value_;
+    }
   else
-  {
-    min_value_ = newconfig.min_value;
-    max_value_ = newconfig.max_value;
-  }
+    {
+      min_value_ = newconfig.min_value;
+      max_value_ = newconfig.max_value;
+    }
   if (newconfig.auto_range != auto_range_)
-     auto_range_ = newconfig.auto_range;
+    auto_range_ = newconfig.auto_range;
   if (newconfig.color_map != color_map_)
-     color_map_ = newconfig.color_map;
+    color_map_ = newconfig.color_map;
   if (newconfig.hist_equal != color_map_)
-     hist_equal = newconfig.hist_equal;
+    hist_equal = newconfig.hist_equal;
   if (newconfig.num_bins != num_bins)
-  num_bins = newconfig.num_bins;
+    num_bins = newconfig.num_bins;
 }
 
 void imageCb(const sensor_msgs::ImageConstPtr& msg) {
-    cv::Mat gray_img_(cv::Size(msg->width, msg->height), CV_8U);
-    cv_bridge::CvImagePtr cv_ptr_;
-    try {
-        cv_ptr_ = cv_bridge::toCvCopy(msg, enc::MONO16);
-    }
-    catch (cv_bridge::Exception &e) {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
-    }
+  // for debugging
+  double minVal; 
+  double maxVal; 
+  cv::Point minLoc; 
+  cv::Point maxLoc;
+  
+  cv::Mat gray_img_(cv::Size(msg->width, msg->height), CV_8U);
+  cv_bridge::CvImagePtr cv_ptr_;
+  try {
+    // cv_ptr_ = cv_bridge::toCvCopy(msg, enc::MONO16);
+    cv_ptr_ = cv_bridge::toCvCopy(msg, enc::MONO8);
+  }
+  catch (cv_bridge::Exception &e) {
+    ROS_ERROR("cv_bridge exception: %s", e.what());
+    return;
+  }
 
-    if (auto_range_) //find min and max values in image
-    {
-        cv::Mat img = cv_ptr_->image.clone();
+  // if (auto_range_) //find min and max values in image
+  //   {
+  //     cv::Mat img = cv_ptr_->image.clone();
 
-        if (img.type() != CV_32F) {
-            img.convertTo(img,
-                          CV_32F);//, (255.0f/65535.0f));//convert to float between 0 and 255 to not break all uint8 based float aspects of program
-        }
+  //     if (img.type() != CV_32F) {
+  // 	img.convertTo(img,
+  // 		      CV_32F);//, (255.0f/65535.0f));//convert to float between 0 and 255 to not break all uint8 based float aspects of program
+  //     }
 
-        // int histSize = 1000;    // bin size
-        float range[] = {0, 65536};
-        const float *ranges[] = {range};
-        bool uniform = true;
-        bool accumulate = false;
-        cv::calcHist(&img, 1, 0, cv::Mat(), imHist, 1, &num_bins, ranges, uniform, accumulate);
-        float maxHist = 0;
-        int binNum = -1;
-        for (int i = 0; i < num_bins; i++) {
-            float histVal = imHist.at<float>(i);
-            if (histVal > maxHist) {
-                maxHist = histVal;
-                binNum = i;
-            }
-        }
-        //printf("bin: %d\n", binNum);
-        //printf("maxHist: %f\n", maxHist);
-        float binSize = (range[1] - range[0]) / (float) num_bins;
-        //printf("binSize: %f\n", binSize);
-        float meanBin = binSize * binNum;
-        minBound = meanBin - 5 * binSize;
-        maxBound = meanBin + 5 * binSize;
-        //printf("maxBound: %f\n", maxBound);
-        //printf("minBound: %f\n", minBound);
-	min_value_=minBound;
-	max_value_=maxBound;
-    }
-    else {
-        minBound = min_value_;
-        maxBound = max_value_;
-    }
-        //scale image between 0 and 255 and convert to mono 8-bit
-        cv_ptr_->image.convertTo(gray_img_, CV_8UC1, 255.0 / (maxBound - minBound),
-                                 -minBound * 255.0 / (maxBound - minBound));
-        if(hist_equal)
-			cv::equalizeHist(gray_img_,gray_img_);
+  //     // int histSize = 1000;    // bin size
+  //     float range[] = {0, 65536};
+  //     const float *ranges[] = {range};
+  //     bool uniform = true;
+  //     bool accumulate = false;
+  //     cv::calcHist(&img, 1, 0, cv::Mat(), imHist, 1, &num_bins, ranges, uniform, accumulate);
+  //     float maxHist = 0;
+  //     int binNum = -1;
+  //     for (int i = 0; i < num_bins; i++) {
+  // 	float histVal = imHist.at<float>(i);
+  // 	if (histVal > maxHist) {
+  // 	  maxHist = histVal;
+  // 	  binNum = i;
+  // 	}
+  //     }
+  //     //printf("bin: %d\n", binNum);
+  //     //printf("maxHist: %f\n", maxHist);
+  //     float binSize = (range[1] - range[0]) / (float) num_bins;
+  //     //printf("binSize: %f\n", binSize);
+  //     float meanBin = binSize * binNum;
+  //     minBound = meanBin - 5 * binSize;
+  //     maxBound = meanBin + 5 * binSize;
+  //     //printf("maxBound: %f\n", maxBound);
+  //     //printf("minBound: %f\n", minBound);
+  //     min_value_=minBound;
+  //     max_value_=maxBound;
+  //   }
+  // else {
+  //   minBound = min_value_;
+  //   maxBound = max_value_;
+  // }
+  
+  // //scale image between 0 and 255 and convert to mono 8-bit
+  // cv_ptr_->image.convertTo(gray_img_, CV_8UC1, 255.0 / (maxBound - minBound),
+  // 			   -minBound * 255.0 / (maxBound - minBound));
+  // if(hist_equal)
+  //   cv::equalizeHist(gray_img_,gray_img_);
 
-		cv::medianBlur(gray_img_,gray_img_,3);
+  // cv::medianBlur(gray_img_,gray_img_,3);
 
-        //mono image
-        cv_ptr_->image = gray_img_;
-        cv_ptr_->encoding = "mono8";
+  // gray_img_ = cv_bridge::matFromImage(msg);
+  gray_img_ = cv_ptr_->image;
+  //cout << gray_img_ << endl;
+  minMaxLoc(gray_img_, &minVal, &maxVal, &minLoc, &maxLoc );
 
-        sensor_msgs::ImagePtr output_img =cv_ptr_->toImageMsg();
-        output_img->header=msg->header;
-        output_img->encoding = "mono8";
-        image_pub_mono.publish(output_img);
+  cout << "min val : " << minVal << endl;
+  cout << "max val: " << maxVal << endl;
+  
+  //mono image
+  cv_ptr_->image = gray_img_;
+  cv_ptr_->encoding = "mono8";
 
-        //color image
-        cv_ptr_->encoding = "rgb8";
-        if (color_map_ < 12)
-            cv::applyColorMap(cv_ptr_->image, cv_ptr_->image, color_map_);
-        else
-            applyIronColorMap(cv_ptr_->image, cv_ptr_->image);
+  sensor_msgs::ImagePtr output_img =cv_ptr_->toImageMsg();
+  output_img->header=msg->header;
+  output_img->encoding = "mono8";
+  image_pub_mono.publish(output_img);
 
-        sensor_msgs::ImagePtr output_img_color =cv_ptr_->toImageMsg();
-        output_img_color->header=msg->header;
-        output_img_color->encoding = "rgb8";
-        image_pub_color.publish(output_img_color);
+  //color image
+  cv_ptr_->encoding = "rgb8";
+  if (color_map_ < 12){
+    cout << "TRYING TO APPLY COLOR MAP" << endl;    
+    // cv::applyColorMap(cv_ptr_->image, cv_ptr_->image, color_map_);
+    cv::applyColorMap(cv_ptr_->image, cv_ptr_->image, COLORMAP_JET);
+    cv::imshow("rad_image", cv_ptr_->image);
+    // cv::waitKey(0);
+  }
+  else
+    applyIronColorMap(cv_ptr_->image, cv_ptr_->image);
+
+  // convert openCV's BGR to RGB for proper visualization in RVIZ
+  cv::cvtColor(cv_ptr_->image, cv_ptr_->image, cv::COLOR_BGR2RGB);
+  
+  sensor_msgs::ImagePtr output_img_color =cv_ptr_->toImageMsg();
+  output_img_color->header=msg->header;
+  output_img_color->encoding = "rgb8";
+  image_pub_color.publish(output_img_color);
 }
 
 int main(int argc, char** argv)
@@ -221,6 +243,8 @@ int main(int argc, char** argv)
   ros::param::get("~color_map", color_map_);
 
   ros::param::get("~raw_topic", raw_topic);
+  cout << raw_topic << endl;
+  cout << "look at me!!!!!!"  << endl;
   ros::param::get("~mono_topic", mono_topic);
   ros::param::get("~color_topic", color_topic);
   ros::param::get("~num_bins", num_bins);
@@ -232,7 +256,6 @@ int main(int argc, char** argv)
   image_pub_mono = it_.advertise(mono_topic, 1);
 
   image_sub_ = it_.subscribe(raw_topic, 1, &imageCb);
-
 
 
   ros::spin();
